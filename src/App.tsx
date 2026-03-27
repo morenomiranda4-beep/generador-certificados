@@ -210,7 +210,7 @@ export default function App() {
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 h-fit sticky top-8"
+          className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 h-fit lg:sticky lg:top-8"
         >
           <div className="flex items-center gap-3 mb-4">
             <div className="p-1.5 bg-indigo-100 rounded-lg text-indigo-600">
@@ -350,12 +350,12 @@ export default function App() {
         </motion.div>
 
         {/* Preview Section */}
-        <div className="flex flex-col gap-4">
+        <div className="hidden lg:flex flex-col gap-4">
           <div className="flex items-center justify-between px-2">
             <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Vista Previa Profesional (A4)</h2>
           </div>
           
-          <div className="bg-slate-300 p-2 md:p-4 rounded-2xl overflow-auto flex justify-center shadow-inner h-[600px] lg:h-[calc(100vh-140px)] sticky top-8 relative">
+          <div className="bg-slate-300 p-2 md:p-4 rounded-2xl overflow-auto flex justify-center shadow-inner h-[600px] lg:h-[calc(100vh-140px)] lg:sticky lg:top-8 relative">
             {/* Scaling Wrapper to prevent preview from being cut off */}
             <div className="flex justify-center items-start origin-top transition-transform duration-300" style={{ transform: 'scale(var(--preview-scale, 0.3))', width: '210mm' }}>
               <style dangerouslySetInnerHTML={{ __html: `
