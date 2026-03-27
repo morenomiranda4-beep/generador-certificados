@@ -350,7 +350,7 @@ export default function App() {
         </motion.div>
 
         {/* Preview Section */}
-        <div className="hidden lg:flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between px-2">
             <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Vista Previa Profesional (A4)</h2>
           </div>
