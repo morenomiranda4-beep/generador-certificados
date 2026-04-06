@@ -66,28 +66,25 @@ export default function App() {
       // Ensure fonts are loaded
       await document.fonts.ready;
       
+      // Esperar que todas las imágenes del certificado estén cargadas
+      const images = element.querySelectorAll('img');
+      await Promise.all(Array.from(images).map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise(resolve => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      }));
+
       // Small delay to ensure any pending renders are complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       let dataUrl = '';
       try {
-        // Use html-to-image as primary method as it's more accurate for modern CSS
-        dataUrl = await htmlToImage.toPng(element, {
-          quality: 1.0,
-          pixelRatio: 2,
-          backgroundColor: '#ffffff',
-          cacheBust: true,
-          style: {
-            transform: 'none',
-            margin: '0',
-            width: '794px',
-            minHeight: '1123px',
-            letterSpacing: 'normal',
-            wordSpacing: 'normal',
-          }
-        });
+        // Use html2canvas as primary method (más fiable con imágenes base64)
+        throw new Error('use html2canvas');
       } catch (captureError) {
-        console.warn('html-to-image failed, trying html2canvas fallback...', captureError);
+        console.warn('Usando html2canvas...');
         // Fallback to html2canvas if html-to-image fails
         const canvas = await html2canvas(element, {
           scale: 2,
