@@ -4,9 +4,7 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { Download, FileText, Building2, User, MapPin, Euro, Calendar as CalendarIcon, Heart, Loader2, AlertCircle } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import * as htmlToImage from 'html-to-image';
+import { Download, FileText, Building2, User, MapPin, Euro, Calendar as CalendarIcon, Heart, Loader2 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -53,62 +51,10 @@ export default function App() {
   };
 
   const generatePDF = async () => {
-    const element = certificateRef.current;
-    if (!element) {
-      toast.error('No se pudo encontrar el elemento del certificado.');
-      return;
-    }
-    
     setIsGenerating(true);
-    const toastId = toast.loading('Preparando descarga segura...');
+    const toastId = toast.loading('Generando certificado...');
 
     try {
-      await document.fonts.ready;
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      let dataUrl = '';
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        allowTaint: true,
-        windowWidth: 794,
-        onclone: (_clonedDoc, clonedEl) => {
-          // Neutralizar cualquier transform de escala de la previsualización
-          clonedEl.style.transform = 'none';
-          clonedEl.style.position = 'static';
-          clonedEl.style.margin = '0';
-          clonedEl.style.width = '794px';
-          clonedEl.style.minHeight = '1123px';
-          clonedEl.style.letterSpacing = 'normal';
-          clonedEl.style.wordSpacing = 'normal';
-          // Neutralizar transform del contenedor padre
-          const parent = clonedEl.parentElement;
-          if (parent) {
-            parent.style.transform = 'none';
-            parent.style.width = '794px';
-          }
-          // Asegurar que las imágenes son visibles
-          const imgs = clonedEl.querySelectorAll('img');
-          imgs.forEach((img: HTMLImageElement) => {
-            img.style.transform = 'none';
-            img.style.mixBlendMode = 'normal';
-            img.style.display = 'block';
-            img.style.visibility = 'visible';
-            img.style.opacity = '1';
-            img.style.height = 'auto';
-            img.style.maxWidth = '100%';
-          });
-        }
-      });
-      dataUrl = canvas.toDataURL('image/png');
-
-      if (!dataUrl || dataUrl.length < 500) {
-        throw new Error('La imagen generada está vacía o es demasiado pequeña.');
-      }
-
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -116,70 +62,95 @@ export default function App() {
         compress: true,
       });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      // Create an image object to get the real dimensions
-      const img = new Image();
-      img.src = dataUrl;
-      await new Promise(resolve => {
-        img.onload = resolve;
-      });
+      const W = 210;
+      const H = 297;
+      const margin = 20;
+      const contentW = W - margin * 2;
 
-      const imgWidth = img.width;
-      const imgHeight = img.height;
-      const ratio = imgWidth / imgHeight;
-      
-      // Calculate dimensions to fit A4 while maintaining aspect ratio
-      let finalWidth = pdfWidth;
-      let finalHeight = pdfWidth / ratio;
-      
-      // If the calculated height is more than A4 height, scale by height instead
-      if (finalHeight > pdfHeight) {
-        finalHeight = pdfHeight;
-        finalWidth = pdfHeight * ratio;
-      }
+      // Fondo blanco
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(0, 0, W, H, 'F');
 
-      // Center the image in the PDF page
-      const xOffset = (pdfWidth - finalWidth) / 2;
-      const yOffset = (pdfHeight - finalHeight) / 2;
-      
-      const format = dataUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-      pdf.addImage(dataUrl, format, xOffset, yOffset, finalWidth, finalHeight, undefined, 'SLOW');
-      
-      // Save the PDF
+      // Título
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(18);
+      pdf.setTextColor(26, 43, 109);
+      pdf.text('CERTIFICADO DE DONACIÓN', W / 2, margin + 10, { align: 'center' });
+
+      // Línea naranja
+      pdf.setFillColor(212, 140, 31);
+      pdf.rect(margin, margin + 14, contentW, 2, 'F');
+
+      // Cuerpo del texto
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(11);
+      pdf.setTextColor(51, 51, 51);
+
+      const lineHeight = 7;
+      let y = margin + 26;
+
+      const formattedDateStr = (() => {
+        try {
+          return format(new Date(data.date), "d 'de' MMMM 'de' yyyy", { locale: es });
+        } catch { return data.date; }
+      })();
+
+      const paragraph1 = `Yo, ${data.representative} en calidad de representante legal de la Asociación ${data.association.toUpperCase()} con CIF ${data.associationCif}, certifico que ${data.companyName} con CIF: ${data.cif} y domicilio en ${data.address}, ha realizado una donación de ${data.amount}€ a nuestra asociación sin ánimo de lucro.`;
+
+      const paragraph2 = `Agradecemos su apoyo en nuestra ${data.event}, cuyos beneficios serán destinados a ${data.purpose}.`;
+
+      const paragraph3 = 'Es importante destacar que esta donación no está contemplada dentro de la ley de mecenazgo y, por lo tanto, no se podrá deducir fiscalmente.';
+
+      const paragraph4 = `Agradecemos nuevamente a ${data.companyName} por su solidaridad y generosidad. Su contribución es fundamental para seguir adelante con nuestros proyectos y programas solidarios.`;
+
+      const addParagraph = (text: string) => {
+        const lines = pdf.splitTextToSize(text, contentW);
+        lines.forEach((line: string) => {
+          pdf.text(line, margin, y);
+          y += lineHeight;
+        });
+        y += 4;
+      };
+
+      addParagraph(paragraph1);
+      addParagraph(paragraph2);
+      addParagraph(paragraph3);
+      addParagraph(paragraph4);
+
+      // Firma textual
+      y += 4;
+      pdf.text('Atentamente,', margin, y); y += lineHeight;
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(data.representative, margin, y); y += lineHeight;
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(formattedDateStr, margin, y); y += lineHeight + 4;
+
+      // Imagen firma
+      const sigImg = new Image();
+      sigImg.src = SIGNATURE_BASE64;
+      await new Promise(r => { sigImg.onload = r; });
+      const sigAspect = sigImg.naturalWidth / sigImg.naturalHeight;
+      const sigH = 25;
+      const sigW = sigH * sigAspect;
+      pdf.addImage(SIGNATURE_BASE64, 'PNG', margin, y, sigW, sigH);
+      y += sigH + 10;
+
+      // Logo centrado
+      const logoImg = new Image();
+      logoImg.src = LOGO_BASE64;
+      await new Promise(r => { logoImg.onload = r; });
+      const logoAspect = logoImg.naturalWidth / logoImg.naturalHeight;
+      const logoH = 35;
+      const logoW = logoH * logoAspect;
+      const logoX = (W - logoW) / 2;
+      pdf.addImage(LOGO_BASE64, 'PNG', logoX, H - margin - logoH, logoW, logoH);
+
       const safeCompanyName = data.companyName.trim().replace(/[^a-z0-9]/gi, '_') || 'Empresa';
-      const fileName = `Certificado_Donacion_${safeCompanyName}.pdf`;
-      
-      pdf.save(fileName);
-      
+      pdf.save(`Certificado_Donacion_${safeCompanyName}.pdf`);
       toast.success('¡Certificado descargado con éxito!', { id: toastId });
     } catch (error) {
-      console.error('Error detallado al generar PDF:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      
-      toast.error(`Fallo técnico: ${errorMessage}.`, { 
-        id: toastId,
-        duration: 8000,
-        icon: <AlertCircle className="text-red-500" />,
-        action: {
-          label: 'Ayuda',
-          onClick: () => window.open('https://support.google.com/chrome/answer/95669', '_blank')
-        }
-      });
-      
-      // Fallback: try to download as image at least
-      toast.info('Intentando descarga como imagen de respaldo...');
-      try {
-        const imgUrl = await htmlToImage.toJpeg(element, { quality: 0.8 });
-        const link = document.createElement('a');
-        link.download = `Certificado_${data.companyName.replace(/ /g, '_')}.jpg`;
-        link.href = imgUrl;
-        link.click();
-        toast.success('Descargado como imagen (JPG)');
-      } catch (imgError) {
-        console.error('Fallback image failed too:', imgError);
-      }
+      console.error('Error al generar PDF:', error);
+      toast.error('Error al generar el PDF.', { id: toastId });
     } finally {
       setIsGenerating(false);
     }
