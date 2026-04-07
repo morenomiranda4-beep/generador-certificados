@@ -103,6 +103,13 @@ export default function App() {
               el.style.minHeight = '1123px';
               el.style.letterSpacing = 'normal';
               el.style.wordSpacing = 'normal';
+              // Inyectar imágenes base64 directamente en el clon
+              const imgs = el.querySelectorAll('img');
+              imgs.forEach(img => {
+                img.style.mixBlendMode = 'normal';
+                img.style.display = 'block';
+                img.style.maxWidth = '100%';
+              });
             }
           }
         });
@@ -438,7 +445,7 @@ export default function App() {
                     <img 
                       src={SIGNATURE_BASE64} 
                       alt="Firma" 
-                      className="h-32 w-auto object-contain -rotate-2 mix-blend-multiply" 
+                      className="h-32 w-auto object-contain -rotate-2" 
                       referrerPolicy="no-referrer"
                     />
                   </div>
