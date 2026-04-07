@@ -63,58 +63,47 @@ export default function App() {
     const toastId = toast.loading('Preparando descarga segura...');
 
     try {
-      // Ensure fonts are loaded
       await document.fonts.ready;
-      
-      // Esperar que todas las imágenes del certificado estén cargadas
-      const images = element.querySelectorAll('img');
-      await Promise.all(Array.from(images).map(img => {
-        if (img.complete) return Promise.resolve();
-        return new Promise(resolve => {
-          img.onload = resolve;
-          img.onerror = resolve;
-        });
-      }));
-
-      // Small delay to ensure any pending renders are complete
       await new Promise(resolve => setTimeout(resolve, 500));
 
       let dataUrl = '';
-      try {
-        // Use html2canvas as primary method (más fiable con imágenes base64)
-        throw new Error('use html2canvas');
-      } catch (captureError) {
-        console.warn('Usando html2canvas...');
-        // Fallback to html2canvas if html-to-image fails
-        const canvas = await html2canvas(element, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          allowTaint: true,
-          windowWidth: 794,
-          onclone: (clonedDoc) => {
-            const el = clonedDoc.getElementById('certificate-to-capture');
-            if (el) {
-              el.style.transform = 'none';
-              el.style.position = 'static';
-              el.style.margin = '0';
-              el.style.width = '794px';
-              el.style.minHeight = '1123px';
-              el.style.letterSpacing = 'normal';
-              el.style.wordSpacing = 'normal';
-              // Inyectar imágenes base64 directamente en el clon
-              const imgs = el.querySelectorAll('img');
-              imgs.forEach(img => {
-                img.style.mixBlendMode = 'normal';
-                img.style.display = 'block';
-                img.style.maxWidth = '100%';
-              });
-            }
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        allowTaint: true,
+        windowWidth: 794,
+        onclone: (_clonedDoc, clonedEl) => {
+          // Neutralizar cualquier transform de escala de la previsualización
+          clonedEl.style.transform = 'none';
+          clonedEl.style.position = 'static';
+          clonedEl.style.margin = '0';
+          clonedEl.style.width = '794px';
+          clonedEl.style.minHeight = '1123px';
+          clonedEl.style.letterSpacing = 'normal';
+          clonedEl.style.wordSpacing = 'normal';
+          // Neutralizar transform del contenedor padre
+          const parent = clonedEl.parentElement;
+          if (parent) {
+            parent.style.transform = 'none';
+            parent.style.width = '794px';
           }
-        });
-        dataUrl = canvas.toDataURL('image/png');
-      }
+          // Asegurar que las imágenes son visibles
+          const imgs = clonedEl.querySelectorAll('img');
+          imgs.forEach((img: HTMLImageElement) => {
+            img.style.transform = 'none';
+            img.style.mixBlendMode = 'normal';
+            img.style.display = 'block';
+            img.style.visibility = 'visible';
+            img.style.opacity = '1';
+            img.style.height = 'auto';
+            img.style.maxWidth = '100%';
+          });
+        }
+      });
+      dataUrl = canvas.toDataURL('image/png');
 
       if (!dataUrl || dataUrl.length < 500) {
         throw new Error('La imagen generada está vacía o es demasiado pequeña.');
